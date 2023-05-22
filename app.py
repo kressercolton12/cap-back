@@ -34,22 +34,21 @@ class Blog(db.Model):
     text_field = db.Column(db.String, nullable=False)
     image_url = db.Column(db.String, unique=True)
     published = db.Column(db.String, nullable=False)
-    fix_it_fred = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    def __init__(self, id, date, blog_title, text_field, image_url, published, fix_it_fred ):
-        self.id = id
+    def __init__(self, date, blog_title, text_field, image_url, published, user_id ):
         self.date = date
         self.blog_title = blog_title
         self.text_field = text_field
         self.image_url = image_url
         self.published = published
-        self.fix_it_fred = fix_it_fred
+        self.user_id = user_id
 
 
 
 class BlogSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'date', 'blog_title', 'text_field', 'image_url', 'published', 'fix_it_fred')
+        fields = ('id', 'date', 'blog_title', 'text_field', 'image_url', 'published', 'user_id')
 
 blog_schema = BlogSchema()
 multi_blog_schema = BlogSchema(many=True)
@@ -148,30 +147,24 @@ def edit_password(id):
     return jsonify("Password has been changed!", user_schema.dump(user))
 
 
-@app.route('/blog/get/published')
-def get_all_blogs(published):
-    gab = db.session.query(Blog).filter(Blog.published == published).all()
-    return jsonify(multi_blog_schema.dump(gab))
-
-
 @app.route('/blog/create', methods=["POST"])
 def create_blog():
     if request.content_type != 'application/json':
         return jsonify("Unable to create new Blog, try again!")
     
     post_data = request.get_json()
-    date = post_data.get ("date")
-    blog_title = post_data.get ("blog_title")
-    text_field = post_data.get ("text_field")
-    image_url = post_data.get ("image_url")
+    date = post_data.get("date")
+    blog_title = post_data.get("blog_title")
+    text_field = post_data.get("text_field")
+    image_url = post_data.get("image_url")
     published = post_data.get("published")
-    fix_it_fred = post_data.get ("fix_it_fred")
+    user_id = post_data.get("user_id")
 
     existing_blog_check = db.session.query(Blog).filter(Blog.blog_title == blog_title).first()
     if existing_blog_check is not None:
         return jsonify("Blog title is already being used, try again!")
     
-    new_blog = Blog(date, blog_title, text_field, image_url, published, fix_it_fred)
+    new_blog = Blog(date, blog_title, text_field, image_url, published, user_id)
     db.session.add(new_blog)
     db.session.commit()
 
@@ -182,18 +175,23 @@ def create_blog():
 def ub(id):
     if request.content_type != "application/json":
         return jsonify("Cannot update blog, try again!")
+    
     put_data = request.get_json()
-    text_field = put_data('text')
-    blog_title = put_data('blog_title')
-    image_url = put_data('image_url')
+    text_field = put_data.get('text_field')
+    blog_title = put_data.get('blog_title')
+    image_url = put_data.get('image_url')
 
     update_blog = db.session.query(Blog).filter(Blog.id == id).first()
-    update_blog.text_field = text_field
-    update_blog.blog_title = blog_title
-    update_blog.image_url = image_url
-    db.session.commit()
 
-    return jsonify(blog_schema.dump(blog))
+    if text_field != None:
+        update_blog.text_field = text_field
+    if blog_title != None:   
+        update_blog.blog_title = blog_title
+    if image_url != None:   
+        update_blog.image_url = image_url
+
+    db.session.commit()
+    return jsonify(blog_schema.dump(update_blog))
 
 
 @app.route('/blog/delete/<id>', methods=["DELETE"])
