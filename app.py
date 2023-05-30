@@ -33,22 +33,22 @@ class Blog(db.Model):
     blog_title = db.Column(db.String, nullable=False, unique=True)
     text_field = db.Column(db.String, nullable=False)
     image_url = db.Column(db.String, unique=True)
-    published = db.Column(db.String, nullable=False)
+    status = db.Column(db.String, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    def __init__(self, date, blog_title, text_field, image_url, published, user_id ):
+    def __init__(self, date, blog_title, text_field, image_url, status, user_id ):
         self.date = date
         self.blog_title = blog_title
         self.text_field = text_field
         self.image_url = image_url
-        self.published = published
+        self.status = status
         self.user_id = user_id
 
 
 
 class BlogSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'date', 'blog_title', 'text_field', 'image_url', 'published', 'user_id')
+        fields = ('id', 'date', 'blog_title', 'text_field', 'image_url', 'status', 'user_id')
 
 blog_schema = BlogSchema()
 multi_blog_schema = BlogSchema(many=True)
@@ -147,6 +147,12 @@ def edit_password(id):
     return jsonify("Password has been changed!", user_schema.dump(user))
 
 
+@app.route('/blog/get', methods=["GET"])
+def get_blog():
+    blogs = db.session.query(Blog).all()
+    return jsonify(multi_blog_schema.dump(blogs))
+
+
 @app.route('/blog/create', methods=["POST"])
 def create_blog():
     if request.content_type != 'application/json':
@@ -157,14 +163,14 @@ def create_blog():
     blog_title = post_data.get("blog_title")
     text_field = post_data.get("text_field")
     image_url = post_data.get("image_url")
-    published = post_data.get("published")
+    status = post_data.get("status")
     user_id = post_data.get("user_id")
 
     existing_blog_check = db.session.query(Blog).filter(Blog.blog_title == blog_title).first()
     if existing_blog_check is not None:
         return jsonify("Blog title is already being used, try again!")
     
-    new_blog = Blog(date, blog_title, text_field, image_url, published, user_id)
+    new_blog = Blog(date, blog_title, text_field, image_url, status, user_id)
     db.session.add(new_blog)
     db.session.commit()
 
