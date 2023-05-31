@@ -100,7 +100,7 @@ def verify():
     if user.email != "kressercolton12@gmail.com":
         return jsonify("AH AH AH! You didn't say the magic word!")
     
-    return jsonify("User said the magic word!")
+    return jsonify("Authorized")
 
 
 @app.route('/user/get')
@@ -148,9 +148,15 @@ def edit_password(id):
 
 
 @app.route('/blog/get', methods=["GET"])
-def get_blog():
+def get_blogs():
     blogs = db.session.query(Blog).all()
     return jsonify(multi_blog_schema.dump(blogs))
+
+
+@app.route('/blog/get/<id>', methods=["GET"])
+def get_blog(id):
+    blog = db.session.query(Blog).filter(Blog.id == id).first()
+    return jsonify(blog_schema.dump(blog))
 
 
 @app.route('/blog/create', methods=["POST"])
